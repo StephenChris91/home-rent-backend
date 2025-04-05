@@ -35,7 +35,7 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "API is up and running!" });
 });
 
-app.all("*", (req, res, next) => {
+app.all("/api/", (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server, 404`));
 });
 

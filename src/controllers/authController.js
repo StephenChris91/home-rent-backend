@@ -2,6 +2,7 @@ const bcrypt = require("bcrypt");
 const prisma = require("../prisma/client");
 const { generateToken } = require("../utils/jwt");
 const { validationResult } = require("express-validator");
+const sendPasswordResetEmail = require("../utils/sendPasswordResetEmail");
 
 const signup = async (req, res) => {
   try {
@@ -65,6 +66,7 @@ const login = async (req, res) => {
         .json({ message: "Invalid password credentials, please try again" });
 
     const token = generateToken(user);
+    res.send("Login successful");
     return res.json({
       user: {
         id: user.id,
@@ -181,16 +183,16 @@ const verifyPhone = async (req, res) => {
 };
 
 // GOOGLE AUTH (controller-based)
-const googleAuth = async (req, res) => {
-  // To be filled (handle tokenId or OAuth flow)
-  return res.status(200).json({ message: "Google auth placeholder" });
-};
+// const googleAuth = async (req, res) => {
+//   // To be filled (handle tokenId or OAuth flow)
+//   return res.status(200).json({ message: "Google auth placeholder" });
+// };
 
-// FACEBOOK AUTH (controller-based)
-const facebookAuth = async (req, res) => {
-  // To be filled (handle accessToken or OAuth flow)
-  return res.status(200).json({ message: "Facebook auth placeholder" });
-};
+// // FACEBOOK AUTH (controller-based)
+// const facebookAuth = async (req, res) => {
+//   // To be filled (handle accessToken or OAuth flow)
+//   return res.status(200).json({ message: "Facebook auth placeholder" });
+// };
 
 module.exports = {
   signup,
@@ -201,6 +203,6 @@ module.exports = {
   resetPassword,
   verifyEmail,
   verifyPhone,
-  googleAuth,
-  facebookAuth,
+  //   googleAuth,
+  //   facebookAuth,
 };
