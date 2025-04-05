@@ -6,7 +6,7 @@
     "start": "node server.js",
     "dev": "nodemon server.js",
     "build": "prisma generate",
-    "vercel-build": "prisma generate"
+    "vercel-build": "prisma generate --schema=./src/prisma/schema.prisma"
   },
   "keywords": [],
   "author": "",
