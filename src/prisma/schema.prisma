@@ -1,0 +1,255 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String          @id @default(uuid())
+  email              String          @unique
+  password           String
+  firstName          String
+  lastName           String
+  phone              String?
+  phoneVerified      Boolean         @default(false)
+  emailVerified      Boolean         @default(false)
+  profilePicture     String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  bvnVerified        Boolean         @default(false)
+  role               UserRole        @default(USER)
+  verificationStatus VerifyStatus    @default(UNVERIFIED)
+  properties         Property[]
+  bookings           Booking[]
+  hostBookings       Booking[]       @relation("HostBookings")
+  reviews            Review[]
+  receivedReviews    Review[]        @relation("ReceivedReviews")
+  messages           Message[]       @relation("SentMessages")
+  receivedMessages   Message[]       @relation("ReceivedMessages")
+  notifications      Notification[]
+  wishlists          Wishlist[]
+  paymentMethods     PaymentMethod[]
+}
+
+enum UserRole {
+  USER
+  HOST
+  ADMIN
+}
+
+enum VerifyStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+model Property {
+  id           String             @id @default(uuid())
+  title        String
+  description  String
+  price        Float
+  address      String
+  city         String
+  state        String
+  country      String
+  propertyType PropertyType
+  bedrooms     Int
+  bathrooms    Int
+  capacity     Int
+  size         Float?
+  latitude     Float?
+  longitude    Float?
+  amenities    String[]
+  houseRules   String[]
+  photos       PropertyPhoto[]
+  isPublished  Boolean            @default(false)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  owner        User               @relation(fields: [ownerId], references: [id])
+  ownerId      String
+  bookings     Booking[]
+  reviews      Review[]
+  calendar     PropertyCalendar[]
+  wishlists    PropertyWishlist[]
+}
+
+enum PropertyType {
+  APARTMENT
+  HOUSE
+  VILLA
+  HOSTEL
+  HOTEL
+  SHORTLET
+}
+
+model PropertyPhoto {
+  id           String   @id @default(uuid())
+  url          String
+  cloudinaryId String
+  isCover      Boolean  @default(false)
+  order        Int      @default(0)
+  property     Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId   String
+  createdAt    DateTime @default(now())
+}
+
+model PropertyCalendar {
+  id          String   @id @default(uuid())
+  date        DateTime
+  isAvailable Boolean  @default(true)
+  price       Float?
+  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([propertyId, date])
+}
+
+model Booking {
+  id         String        @id @default(uuid())
+  startDate  DateTime
+  endDate    DateTime
+  totalPrice Float
+  status     BookingStatus @default(PENDING)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  property   Property      @relation(fields: [propertyId], references: [id])
+  propertyId String
+  user       User          @relation(fields: [userId], references: [id])
+  userId     String
+  host       User          @relation("HostBookings", fields: [hostId], references: [id])
+  hostId     String
+  payments   Payment[]
+  reviews    Review[]
+}
+
+enum BookingStatus {
+  PENDING
+  APPROVED
+  DECLINED
+  CANCELLED
+  COMPLETED
+}
+
+model Payment {
+  id        String        @id @default(uuid())
+  amount    Float
+  currency  String        @default("NGN")
+  status    PaymentStatus
+  provider  String
+  reference String        @unique
+  booking   Booking       @relation(fields: [bookingId], references: [id])
+  bookingId String
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESSFUL
+  FAILED
+  REFUNDED
+}
+
+model PaymentMethod {
+  id        String   @id @default(uuid())
+  type      String
+  provider  String
+  lastFour  String?
+  isDefault Boolean  @default(false)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Review {
+  id           String   @id @default(uuid())
+  rating       Int
+  comment      String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  property     Property @relation(fields: [propertyId], references: [id])
+  propertyId   String
+  user         User     @relation(fields: [userId], references: [id])
+  userId       String
+  booking      Booking  @relation(fields: [bookingId], references: [id])
+  bookingId    String
+  host         User     @relation("ReceivedReviews", fields: [hostId], references: [id])
+  hostId       String
+  helpfulCount Int      @default(0)
+}
+
+model Conversation {
+  id        String    @id @default(uuid())
+  messages  Message[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Message {
+  id             String              @id @default(uuid())
+  content        String
+  isRead         Boolean             @default(false)
+  createdAt      DateTime            @default(now())
+  sender         User                @relation("SentMessages", fields: [senderId], references: [id])
+  senderId       String
+  recipient      User                @relation("ReceivedMessages", fields: [recipientId], references: [id])
+  recipientId    String
+  conversation   Conversation        @relation(fields: [conversationId], references: [id])
+  conversationId String
+  attachments    MessageAttachment[]
+}
+
+model MessageAttachment {
+  id        String   @id @default(uuid())
+  url       String
+  filename  String
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  messageId String
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  type      String
+  content   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+}
+
+model Wishlist {
+  id         String             @id @default(uuid())
+  name       String
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  properties PropertyWishlist[]
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+}
+
+model PropertyWishlist {
+  id         String   @id @default(uuid())
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId String
+  wishlist   Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  wishlistId String
+  createdAt  DateTime @default(now())
+
+  @@unique([propertyId, wishlistId])
+}
